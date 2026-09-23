@@ -287,7 +287,7 @@
   <div class="device" id="screenLogin">
     <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
     <div class="brand-plate">
-      <span class="brand">TAXITRONIC TX12460</span>
+      <span class="brand">TAXITRONIC</span>
       <span class="clock" id="clockLogin">--:--:--</span>
     </div>
     <div class="menu-intro">Inicia sesión para continuar</div>
@@ -671,7 +671,7 @@
 // ==== SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script) ====
 // Pega aquí la URL de tu Web App tras desplegar apps-script/Code.gs (ver README.md).
 // Déjalo vacío ('') para trabajar solo en local, sin sincronizar.
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxcoSON9CVCoxCunVGPkI1RwwkLut6RBVTC8I4UngpgBO8mFstot0Q4s4EIc_WUZMzbLA/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxwfJFw8fQLMT4-Jr6Ih-a5NVnUt-3bL5uskAmSv9uyF6OD_p2VFfVcd_vo0DlGER3hLw/exec';
 
 async function syncDayToSheet(date){
   const statusEl = document.getElementById('syncStatus');
@@ -709,7 +709,8 @@ async function syncDayToSheet(date){
         else { pdfBit = ' · ⚠ sin PDF (motivo desconocido)'; pdfLine = '\n⚠ El Excel se guardó bien, pero no se generó PDF (sin motivo indicado).'; }
       }
       if(statusEl){ statusEl.textContent = '☁ Sincronizado con Google Sheets' + pdfBit + ' · ' + new Date().toLocaleTimeString('es-ES'); statusEl.style.color = json.pdfError ? '#ffb04b' : 'var(--led-green)'; }
-      showSyncResult('☁ Guardado en Google Sheets', 'Fila guardada correctamente en "Datos diarios".' + pdfLine, !json.pdfError);
+      // Solo interrumpimos con una ventana si algo ha fallado; si todo fue bien, basta con la línea de estado.
+      if(json.pdfError) showSyncResult('⚠ Guardado con aviso', 'Se guardó en "Datos diarios", pero el PDF falló:' + pdfLine, false);
       if(json.pdfUrl) console.log('PDF generado:', json.pdfUrl);
     } else {
       const msg = (json && json.error) ? json.error : ('HTTP ' + res.status + (rawText ? ('\n\nRespuesta del servidor:\n' + rawText.slice(0,400)) : ''));
@@ -722,6 +723,30 @@ async function syncDayToSheet(date){
     if(statusEl){ statusEl.textContent = '⚠ No se pudo contactar con Apps Script (revisa la URL o tu conexión).'; statusEl.style.color = '#ff6b5a'; }
     showSyncResult('⚠ Sin conexión con Apps Script', msg, false);
     console.error('TAXITRONIC sync fetch error:', e);
+  }
+}
+
+async function deleteDayFromSheet(date){
+  if(!SYNC_URL) return;
+  const licenciaBorrada = currentUser;
+  const statusEl = document.getElementById('syncStatus');
+  try{
+    const res = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'},
+      body: JSON.stringify({ accion: 'eliminar', date, licencia: licenciaBorrada })
+    });
+    let json = null;
+    try{ json = await res.json(); }catch(_e){}
+    if(json && json.ok){
+      // Todo bien: basta con la línea de estado, sin interrumpir con una ventana.
+      if(statusEl){ statusEl.textContent = '☁ Día ' + fmtDate(date) + ' borrado también en Sheets · ' + new Date().toLocaleTimeString('es-ES'); statusEl.style.color = 'var(--led-green)'; }
+    } else {
+      const msg = (json && json.error) ? json.error : ('HTTP ' + res.status);
+      showSyncResult('⚠ Se borró en el dispositivo, pero no en Sheets', 'El día se borró aquí, pero no se pudo borrar la fila/PDF en Google Sheets:\n' + msg, false);
+    }
+  }catch(e){
+    showSyncResult('⚠ Se borró en el dispositivo, pero no en Sheets', 'El día se borró aquí, pero no se pudo contactar con Apps Script para borrar la fila/PDF:\n' + (e && e.message ? e.message : e), false);
   }
 }
 
@@ -1280,12 +1305,15 @@ document.getElementById('cancelDel2').addEventListener('click', ()=>{
   document.getElementById('delModal2').classList.add('hidden');
 });
 document.getElementById('confirmDel2').addEventListener('click', async ()=>{
-  if(fixDeleteTarget){ delete days[fixDeleteTarget]; }
+  const dateToDelete = fixDeleteTarget;
+  const wasSent = dateToDelete && days[dateToDelete] && days[dateToDelete].sent;
+  if(dateToDelete){ delete days[dateToDelete]; }
   fixDeleteTarget = null;
   document.getElementById('delModal2').classList.add('hidden');
   document.getElementById('fixModal').classList.add('hidden');
   await saveState();
   render();
+  if(wasSent) deleteDayFromSheet(dateToDelete);
 });
 
 /* ---- borrar todo el historial ---- */
