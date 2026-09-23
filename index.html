@@ -323,7 +323,7 @@
 
     <button class="menu-btn" id="btnGoDaily">
       <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#08321f" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
-      <span class="txt"><span class="t1">HOJA DIARIA</span><span class="t2">Meter carreras y gastos del día</span></span>
+      <span class="txt"><span class="t1">HOJA DIARIA</span><span class="t2">Meter importes y gastos del día</span></span>
     </button>
 
     <button class="menu-btn billing" id="btnGoBilling">
@@ -362,7 +362,7 @@
       <div class="display-label">TOTAL FACTURADO</div>
       <div class="display-total" id="totalDisplay">0.00 €</div>
       <div class="display-meta">
-        <span id="periodMeta">--/--/---- · 0 carreras</span>
+        <span id="periodMeta">--/--/----</span>
         <span class="sent-badge hidden" id="sentBadge">ENVIADA ✓</span>
       </div>
       <div class="display-meta2" id="metaGastos">Gastos: 0.00 € · Neto: 0.00 €</div>
@@ -449,8 +449,8 @@
 
   <div class="ticket">
     <h3>REGISTRO DE HOY</h3>
-    <div class="move-list" id="moveList"><div class="empty">Sin carreras registradas todavía.</div></div>
-    <button class="undo-link hidden" id="undoLink">deshacer última carrera</button>
+    <div class="move-list" id="moveList"><div class="empty">Sin apuntes registrados todavía.</div></div>
+    <button class="undo-link hidden" id="undoLink">deshacer último apunte</button>
   </div>
 
   <div class="ticket hidden" id="histPanel">
@@ -490,7 +490,7 @@
       <div class="display-label">FACTURADO EN EL PERIODO</div>
       <div class="display-total" id="billTotalDisplay">0.00 €</div>
       <div class="display-meta">
-        <span id="billPeriodMeta">-- · 0 días · 0 carreras</span>
+        <span id="billPeriodMeta">-- · 0 días</span>
       </div>
       <div class="display-meta2" id="billMetaGastos">Gastos: 0.00 € · Neto: 0.00 €</div>
     </div>
@@ -659,7 +659,7 @@
 // ==== SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script) ====
 // Pega aquí la URL de tu Web App tras desplegar apps-script/Code.gs (ver README.md).
 // Déjalo vacío ('') para trabajar solo en local, sin sincronizar.
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxo7y5A1KA-9ZNS1ri1Cz0Fx_7UxIAIm0ch3YZyxXozXhkXgYP0Sr5OiV8O6WE87FXJ/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbyR61M8n4-1qOR5_8Fs5IAz5f0Hw82-SjuNaIXerv-waQKepZOGVmcGtJyLm9hmYh9DVA/exec';
 
 async function syncDayToSheet(date){
   const statusEl = document.getElementById('syncStatus');
@@ -678,7 +678,6 @@ async function syncDayToSheet(date){
         licencia: currentUser,
         efectivo: d.efectivo, tarjeta: d.tarjeta, uber: d.uber, freenow: d.freenow,
         bolt: d.bolt, emisora: d.emisora, combustible: d.combustible, otros: d.otros,
-        carreras: d.movements.filter(m => !EXPENSE_CATS.includes(m.cat)).length,
         enviada: !!d.sent,
         refuerzo: !!d.refuerzo
       })
@@ -916,18 +915,16 @@ function calcularFacturacion(){
   const dates = Object.keys(days).filter(dt => dt>=start && dt<=end && days[dt].sent).sort();
 
   const sum = {efectivo:0,tarjeta:0,uber:0,freenow:0,bolt:0,emisora:0,combustible:0,otros:0};
-  let carreras = 0;
   dates.forEach(dt=>{
     const d = days[dt];
     Object.keys(sum).forEach(k=> sum[k]+=d[k]||0);
-    carreras += d.movements.filter(m=>!EXPENSE_CATS.includes(m.cat)).length;
   });
   const facturado = sum.efectivo+sum.tarjeta+sum.uber+sum.freenow+sum.bolt+sum.emisora;
   const gastos = sum.combustible+sum.otros;
   const neto = facturado-gastos;
 
   document.getElementById('billTotalDisplay').textContent = fmt(facturado)+' €';
-  document.getElementById('billPeriodMeta').textContent = `${fmtDate(start)} → ${fmtDate(end)} · ${dates.length} día${dates.length!==1?'s':''} · ${carreras} carrera${carreras!==1?'s':''}`;
+  document.getElementById('billPeriodMeta').textContent = `${fmtDate(start)} → ${fmtDate(end)} · ${dates.length} día${dates.length!==1?'s':''}`;
   document.getElementById('billMetaGastos').textContent = `Gastos: ${fmt(gastos)} € · Neto: ${fmt(neto)} €`;
   document.getElementById('billMiniEfectivo').textContent = fmt(sum.efectivo);
   document.getElementById('billMiniTarjeta').textContent = fmt(sum.tarjeta);
@@ -1000,13 +997,13 @@ function render(){
   document.getElementById('metaGastos').textContent = `Gastos: ${fmt(dayExpenses(d))} € · Neto: ${fmt(dayNet(d))} €`;
   const fijoVal = (usersConfig[currentUser] && usersConfig[currentUser].fijo) || 0;
   document.getElementById('metaFijo').textContent = `Fijo diario: ${fmt(fijoVal)} €`;
-  document.getElementById('periodMeta').textContent = `${fmtDate(selectedDate)}${isToday?' (hoy)':''} · ${d.movements.length} carrera${d.movements.length!==1?'s':''}`;
+  document.getElementById('periodMeta').textContent = `${fmtDate(selectedDate)}${isToday?' (hoy)':''}`;
   document.getElementById('sentBadge').classList.toggle('hidden', !d.sent);
   document.getElementById('refuerzoToggle').checked = !!d.refuerzo;
 
   const list = document.getElementById('moveList');
   if(d.movements.length===0){
-    list.innerHTML = '<div class="empty">Sin carreras registradas todavía.</div>';
+    list.innerHTML = '<div class="empty">Sin apuntes registrados todavía.</div>';
     document.getElementById('undoLink').classList.add('hidden');
   }else{
     list.innerHTML = d.movements.slice().reverse().map(m=>{
