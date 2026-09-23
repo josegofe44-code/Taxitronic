@@ -559,6 +559,7 @@
 <div class="modal-overlay hidden" id="sendModal">
   <div class="modal">
     <h4>Enviar hoja diaria</h4>
+    <p id="sendAlreadyWarning" class="hidden" style="color:#c73b32;font-weight:600;">⚠ Este día (<span id="sendDateLabel2"></span>) YA se había enviado antes. Si continúas, se sustituirá por esta versión corregida (el PDF anterior se borra y se genera uno nuevo marcado como CORREGIDO).</p>
     <p>Se guardará una única fila con el desglose actual del día seleccionado (<span id="sendDateLabel"></span>) en tu Google Sheet, y se marcará como enviada. Si vuelves a enviar la misma hoja más tarde, esa fila se actualiza (no se duplica).</p>
     <div class="modal-actions">
       <button class="modal-cancel" id="cancelSend">Cancelar</button>
@@ -1229,6 +1230,8 @@ document.getElementById('btnHist').addEventListener('click', ()=>{
 /* ---- enviar hoja ---- */
 document.getElementById('btnEnviar').addEventListener('click', ()=>{
   document.getElementById('sendDateLabel').textContent = fmtDate(selectedDate);
+  document.getElementById('sendDateLabel2').textContent = fmtDate(selectedDate);
+  document.getElementById('sendAlreadyWarning').classList.toggle('hidden', !isDayLocked(selectedDate));
   document.getElementById('sendModal').classList.remove('hidden');
 });
 document.getElementById('cancelSend').addEventListener('click', ()=> document.getElementById('sendModal').classList.add('hidden'));
@@ -1286,6 +1289,9 @@ document.getElementById('confirmFix').addEventListener('click', async ()=>{
   document.getElementById('fixModal').classList.add('hidden');
   await saveState();
   render();
+  // Si ese día ya se había enviado antes, la corrección se manda sola:
+  // borra el PDF anterior en Drive y genera uno nuevo marcado como CORREGIDO.
+  if(d.sent) syncDayToSheet(date);
 });
 document.getElementById('fixDelete').addEventListener('click', ()=>{
   fixDeleteTarget = document.getElementById('fixDateSelect').value;
