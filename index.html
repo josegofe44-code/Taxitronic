@@ -672,7 +672,7 @@
 // ==== SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script) ====
 // Pega aquí la URL de tu Web App tras desplegar apps-script/Code.gs (ver README.md).
 // Déjalo vacío ('') para trabajar solo en local, sin sincronizar.
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxcoSON9CVCoxCunVGPkI1RwwkLut6RBVTC8I4UngpgBO8mFstot0Q4s4EIc_WUZMzbLA/exec';
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbz-w9v2XGCf7qtobOsjIJNbkv_LQGmZoaWRqvUisUtSm4oUsChMuUyJLw7KnU7SppnQ7w/exec';
 
 async function syncDayToSheet(date){
   const statusEl = document.getElementById('syncStatus');
@@ -705,14 +705,17 @@ async function syncDayToSheet(date){
       let pdfBit = '';
       let pdfLine = '';
       if(d.sent){
-        if(json.pdfUrl){ pdfBit = ' · PDF generado ✓'; pdfLine = '\nPDF: ' + json.pdfUrl; }
+        if(json.pdfUrl){
+          pdfBit = json.pdfReemplazado ? ' · PDF sustituido (CORREGIDO) ✓' : ' · PDF generado ✓';
+          pdfLine = '\nPDF: ' + json.pdfUrl + (json.pdfReemplazado ? '\n(Se borró el PDF anterior de este día y se creó uno nuevo marcado como CORREGIDO.)' : '');
+        }
         else if(json.pdfError){ pdfBit = ' · ⚠ PDF: ' + json.pdfError; pdfLine = '\n⚠ El Excel se guardó bien, pero el PDF falló:\n' + json.pdfError; }
         else { pdfBit = ' · ⚠ sin PDF (motivo desconocido)'; pdfLine = '\n⚠ El Excel se guardó bien, pero no se generó PDF (sin motivo indicado).'; }
       }
       if(statusEl){ statusEl.textContent = '☁ Sincronizado con Google Sheets' + pdfBit + ' · ' + new Date().toLocaleTimeString('es-ES'); statusEl.style.color = json.pdfError ? '#ffb04b' : 'var(--led-green)'; }
       // Solo interrumpimos con una ventana si algo ha fallado; si todo fue bien, basta con la línea de estado.
       if(json.pdfError) showSyncResult('⚠ Guardado con aviso', 'Se guardó en "Datos diarios", pero el PDF falló:' + pdfLine, false);
-      if(json.pdfUrl) console.log('PDF generado:', json.pdfUrl);
+      if(json.pdfUrl) console.log('PDF generado:', json.pdfUrl, 'reemplazado:', json.pdfReemplazado);
     } else {
       const msg = (json && json.error) ? json.error : ('HTTP ' + res.status + (rawText ? ('\n\nRespuesta del servidor:\n' + rawText.slice(0,400)) : ''));
       if(statusEl){ statusEl.textContent = '⚠ Error al sincronizar: ' + msg; statusEl.style.color = '#ff6b5a'; }
