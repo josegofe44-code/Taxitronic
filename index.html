@@ -1,0 +1,1326 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>TAXITRÓNICO TX12460 · Control de caja</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --case:#232327; --case-2:#151517; --bezel:#0e0e10;
+    --screen:#070707;
+    --led-red:#ff2f22; --led-red-glow:rgba(255,47,34,.55);
+    --led-green:#39d98a; --led-green-glow:rgba(57,217,138,.5);
+    --key-dark:#1b1b1d; --key-top:#2c2c2f; --key-text:#e6e6e6;
+    --paper:#f2ead6; --paper-2:#e9e0c8; --ink:#2b2620; --ink-dim:#7a7266;
+    --cat-efectivo:#3ddc6b; --cat-tarjeta:#3ba7ff; --cat-uber:#1fb6ff; --cat-freenow:#ff5f9e; --cat-bolt:#9bde1f; --cat-emisora:#ff9f3d;
+    --cat-combustible:#ff6b3d; --cat-otros:#9198a1;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;touch-action:manipulation;}
+  body{
+    background:radial-gradient(circle at 30% 0%, #2a2a2d 0%, #131315 60%, #09090a 100%);
+    min-height:100vh; font-family:'Oswald',sans-serif; color:var(--ink);
+    padding:22px 12px 60px; display:flex; justify-content:center;
+  }
+  .wrap{width:100%;max-width:440px;}
+
+  /* -------- DEVICE -------- */
+  .device{
+    background:linear-gradient(180deg,var(--case),var(--case-2));
+    border-radius:14px; padding:14px 13px 18px;
+    box-shadow:0 30px 60px -20px rgba(0,0,0,.75), inset 0 1px 0 rgba(255,255,255,.06), inset 0 -2px 6px rgba(0,0,0,.6);
+    border:1px solid #000; position:relative;
+  }
+  .screw{position:absolute;width:7px;height:7px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#6a6a6e,#222 70%);}
+  .screw.tl{top:8px;left:8px;}.screw.tr{top:8px;right:8px;}.screw.bl{bottom:8px;left:8px;}.screw.br{bottom:8px;right:8px;}
+
+  .brand-plate{display:flex;align-items:baseline;justify-content:space-between;padding:0 4px 8px;gap:8px;}
+  .brand-plate .brand{
+    font-weight:700;font-size:14px;letter-spacing:.5px;color:var(--led-green);
+    text-shadow:0 0 6px var(--led-green-glow),0 0 14px var(--led-green-glow);
+    white-space:nowrap;
+  }
+  .brand-plate .clock{font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--led-green);opacity:.85;}
+
+  .date-bar{
+    display:flex;align-items:center;gap:8px;background:var(--key-dark);border-radius:8px;
+    padding:8px 10px;margin-bottom:10px;
+  }
+  .date-bar label{font-size:9.5px;letter-spacing:1px;color:#9a9a9e;flex:none;}
+  .date-bar input[type="date"]{
+    flex:1;background:#0c0c0e;border:1px solid #000;border-radius:5px;color:var(--led-green);
+    font-family:'Share Tech Mono',monospace;font-size:16px;padding:5px 7px;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.8);color-scheme:dark;
+  }
+  .date-today{
+    flex:none;border:none;border-radius:5px;padding:6px 10px;background:linear-gradient(180deg,#3a3a3e,#242426);
+    color:var(--led-green);font-family:'Oswald',sans-serif;font-weight:600;font-size:10.5px;letter-spacing:.5px;cursor:pointer;
+    box-shadow:0 2px 0 #000, inset 0 1px 0 rgba(255,255,255,.1);
+  }
+  .date-today:active{transform:translateY(1px);box-shadow:0 1px 0 #000;}
+  .date-today.is-today{color:var(--led-red);}
+
+  /* -------- SWITCH REFUERZO -------- */
+  .refuerzo-bar{
+    display:flex;align-items:center;justify-content:space-between;background:var(--key-dark);
+    border-radius:8px;padding:9px 12px;margin-bottom:10px;
+  }
+  .refuerzo-bar label{font-size:11px;letter-spacing:1px;color:#c9c9cc;font-weight:600;}
+  .switch{position:relative;display:inline-block;width:46px;height:26px;flex:none;}
+  .switch input{opacity:0;width:0;height:0;}
+  .switch .slider{
+    position:absolute;cursor:pointer;inset:0;background:#3a3a3e;border-radius:26px;
+    transition:.2s;box-shadow:inset 0 1px 3px rgba(0,0,0,.6);
+  }
+  .switch .slider::before{
+    content:"";position:absolute;height:20px;width:20px;left:3px;bottom:3px;
+    background:#e6e6e6;border-radius:50%;transition:.2s;
+  }
+  .switch input:checked + .slider{background:#1e8f5b;}
+  .switch input:checked + .slider::before{transform:translateX(20px);background:#fff;}
+
+  /* -------- HOME SCREEN -------- */
+  .back-btn{
+    background:none;border:none;color:#9a9a9e;font-family:'Oswald',sans-serif;font-size:11px;
+    letter-spacing:.5px;cursor:pointer;padding:0 4px 10px;display:flex;align-items:center;gap:4px;
+  }
+  .menu-intro{font-size:11px;color:#9a9a9e;padding:0 4px 14px;line-height:1.5;}
+  .menu-btn{
+    display:flex;align-items:center;gap:14px;width:100%;text-align:left;
+    background:linear-gradient(180deg,#232326,#19191b);border:1px solid #000;border-radius:10px;
+    padding:16px 14px;margin-bottom:12px;cursor:pointer;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.05);
+  }
+  .menu-btn:active{transform:translateY(2px);}
+  .menu-btn .icon{
+    width:44px;height:44px;border-radius:50%;flex:none;display:flex;align-items:center;justify-content:center;
+    background:radial-gradient(circle at 35% 30%,#4be3a0,#1e8f5b 75%);
+    box-shadow:0 3px 0 #0d5c39, inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .menu-btn.billing .icon{
+    background:radial-gradient(circle at 35% 30%,#ffb04b,#c9781e 75%);
+    box-shadow:0 3px 0 #8a561a, inset 0 1px 0 rgba(255,255,255,.3);
+  }
+  .menu-btn .icon svg{width:21px;height:21px;}
+  .menu-btn .txt{display:flex;flex-direction:column;gap:3px;}
+  .menu-btn .txt .t1{font-size:15px;font-weight:600;color:#e6e6e6;letter-spacing:.3px;}
+  .menu-btn .txt .t2{font-size:11px;color:#8a8a8f;}
+
+  /* -------- BILLING RANGE -------- */
+  .range-fields{display:grid;grid-template-columns:auto 1fr;gap:8px 10px;align-items:center;background:var(--key-dark);border-radius:8px;padding:10px 12px;margin-bottom:10px;}
+  .range-fields label{font-size:9.5px;letter-spacing:1px;color:#9a9a9e;}
+  .range-fields input[type="date"]{
+    background:#0c0c0e;border:1px solid #000;border-radius:5px;color:var(--led-green);
+    font-family:'Share Tech Mono',monospace;font-size:16px;padding:6px 7px;
+    box-shadow:inset 0 1px 3px rgba(0,0,0,.8);color-scheme:dark;
+  }
+
+  .screen{
+    background:var(--screen); border-radius:6px; padding:10px 10px 8px;
+    box-shadow:inset 0 2px 10px rgba(0,0,0,.85), inset 0 0 0 1px #000;
+    margin-bottom:10px; position:relative; overflow:hidden;
+  }
+  .screen::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(180deg,rgba(255,255,255,.015) 0 1px,transparent 1px 3px);pointer-events:none;}
+  .display-label{font-size:9.5px;letter-spacing:1.5px;color:#6b1c16;font-weight:500;margin-bottom:1px;}
+  .display-total{
+    font-family:'Share Tech Mono',monospace;font-size:38px;line-height:1.05;color:var(--led-red);
+    text-shadow:0 0 8px var(--led-red-glow),0 0 18px var(--led-red-glow); font-variant-numeric:tabular-nums;
+  }
+  .display-meta{font-size:10.5px;color:#a04338;font-family:'Share Tech Mono',monospace;margin-top:3px;display:flex;justify-content:space-between;}
+  .display-meta2{font-size:10px;color:#8a5a45;font-family:'Share Tech Mono',monospace;margin-top:2px;display:flex;justify-content:space-between;}
+  .sent-badge{color:var(--led-green);text-shadow:0 0 5px var(--led-green-glow);}
+
+  .mini-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;}
+  .mini-row + .mini-row{margin-bottom:10px;}
+  .mini{background:var(--screen);border-radius:5px;padding:6px 4px;box-shadow:inset 0 2px 6px rgba(0,0,0,.85),inset 0 0 0 1px #000;text-align:center;}
+  .mini .mini-label{font-size:8px;letter-spacing:.4px;color:#6b1c16;margin-bottom:2px;font-weight:500;}
+  .mini .mini-val{font-family:'Share Tech Mono',monospace;font-size:13px;color:var(--led-red);text-shadow:0 0 5px var(--led-red-glow);}
+
+  /* -------- CATEGORY TILES (mini-display + botón fusionados) -------- */
+  .cat-tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6px;}
+  .cat-tiles + .cat-tiles{margin-bottom:10px;}
+  .cat-tiles.cols-2{grid-template-columns:repeat(2,1fr);}
+  .cat-tile{
+    background:var(--screen);border-radius:14px;padding:8px 4px;text-align:center;cursor:pointer;
+    box-shadow:inset 0 2px 6px rgba(0,0,0,.85),inset 0 0 0 1.5px #000;
+    transition:transform .1s ease;
+  }
+  .cat-tile:active{transform:scale(.94);}
+  .cat-tile .tile-head{display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:3px;}
+  .cat-tile .dot{width:7px;height:7px;border-radius:50%;flex:none;}
+  .cat-tile .lbl{font-size:8px;letter-spacing:.4px;color:#8a7a5a;font-weight:500;}
+  .cat-tile .tile-val{font-family:'Share Tech Mono',monospace;font-size:17px;color:var(--led-red);text-shadow:0 0 5px var(--led-red-glow);}
+  .cat-tile.active{box-shadow:inset 0 0 0 2px var(--tab-color,#fff),inset 0 2px 6px rgba(0,0,0,.85);}
+  .cat-tile.active .lbl{color:#fff;}
+  @keyframes tileConfirm{
+    0%{box-shadow:inset 0 0 0 2px var(--tab-color,#fff),inset 0 2px 6px rgba(0,0,0,.85);}
+    40%{box-shadow:inset 0 0 0 3px var(--tab-color,#fff), 0 0 16px var(--tab-color,#fff);transform:scale(1.06);}
+    100%{box-shadow:inset 0 0 0 2px var(--tab-color,#fff),inset 0 2px 6px rgba(0,0,0,.85);transform:scale(1);}
+  }
+  .cat-tile.confirm{animation:tileConfirm .45s ease;}
+  .cat-tile.confirm .lbl{color:#fff;}
+  .cat-tile[data-cat="efectivo"] .dot{background:var(--cat-efectivo);box-shadow:0 0 6px var(--cat-efectivo);}
+  .cat-tile[data-cat="tarjeta"] .dot{background:var(--cat-tarjeta);box-shadow:0 0 6px var(--cat-tarjeta);}
+  .cat-tile[data-cat="uber"] .dot{background:var(--cat-uber);box-shadow:0 0 6px var(--cat-uber);}
+  .cat-tile[data-cat="freenow"] .dot{background:var(--cat-freenow);box-shadow:0 0 6px var(--cat-freenow);}
+  .cat-tile[data-cat="bolt"] .dot{background:var(--cat-bolt);box-shadow:0 0 6px var(--cat-bolt);}
+  .cat-tile[data-cat="emisora"] .dot{background:var(--cat-emisora);box-shadow:0 0 6px var(--cat-emisora);}
+  .cat-tile[data-cat="combustible"] .dot{background:var(--cat-combustible);box-shadow:0 0 6px var(--cat-combustible);}
+  .cat-tile[data-cat="otros"] .dot{background:var(--cat-otros);box-shadow:0 0 6px var(--cat-otros);}
+
+  /* -------- KEYPAD -------- */
+  .keypad-block{background:linear-gradient(180deg,#232326,#19191b);border-radius:10px;padding:10px;box-shadow:inset 0 1px 0 rgba(255,255,255,.05);margin-bottom:10px;position:relative;}
+  .entry-screen{
+    background:var(--screen);border-radius:5px;padding:6px 10px;margin-bottom:8px;
+    box-shadow:inset 0 2px 8px rgba(0,0,0,.85),inset 0 0 0 1px #000;
+    display:flex;justify-content:space-between;align-items:baseline;
+  }
+  .entry-val{font-family:'Share Tech Mono',monospace;font-size:22px;color:var(--led-red);text-shadow:0 0 7px var(--led-red-glow);min-height:26px;}
+  .entry-cat{font-size:10.5px;letter-spacing:1px;font-weight:600;color:var(--led-green);font-family:'Oswald',sans-serif;}
+  .keypad-row{display:flex;gap:9px;align-items:flex-start;}
+  .keys{display:grid;grid-template-columns:repeat(3,44px);justify-content:start;gap:8px;}
+  .key{
+    width:44px;height:44px;border-radius:50%;border:none;
+    background:radial-gradient(circle at 35% 30%,#ffffff,#d6d6d9 75%);
+    color:#111;font-family:'Share Tech Mono',monospace;font-size:15px;font-weight:700;
+    box-shadow:0 3px 0 #8a8a8d, inset 0 1px 0 rgba(255,255,255,.7);cursor:pointer;
+  }
+  .key:active{transform:translateY(2px);box-shadow:0 1px 0 #8a8a8d;}
+  .key.fn{color:#b23a2f;font-size:13px;}
+
+  /* -------- COLUMNA DE ACCIONES (a la derecha del teclado) -------- */
+  .side-actions{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;}
+  .side-btn{
+    height:46px;border:none;border-radius:10px;cursor:pointer;flex:none;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+    background:linear-gradient(180deg,#2fbf7c,#1e8f5b);color:#fff;
+    box-shadow:0 3px 0 #0d5c39, inset 0 1px 0 rgba(255,255,255,.2);
+    font-family:'Oswald',sans-serif;font-weight:600;font-size:8.5px;letter-spacing:.2px;
+    line-height:1.15;text-align:center;padding:3px 2px;
+  }
+  .side-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0d5c39;}
+  .side-btn svg{width:14px;height:14px;flex:none;}
+  .side-btn.ok{flex-direction:row;font-size:16px;letter-spacing:1px;background:linear-gradient(180deg,#3ddc6b,#1e8f5b);margin-bottom:16px;position:relative;}
+  .side-btn.ok::after{
+    content:"";position:absolute;left:10%;right:10%;bottom:-9px;height:1px;
+    background:rgba(255,255,255,.15);
+  }
+  .side-btn.soft{
+    background:linear-gradient(180deg,#ffffff,#e6e6e6);color:#111;
+    box-shadow:0 3px 0 #b0b0b3, inset 0 1px 0 rgba(255,255,255,.8);
+  }
+  .side-btn.soft:active{box-shadow:0 1px 0 #b0b0b3;}
+
+  .add-btn{
+    width:100%;margin-top:9px;padding:11px;border:none;border-radius:8px;
+    background:linear-gradient(180deg,#2fbf7c,#1e8f5b);color:#fff;font-family:'Oswald',sans-serif;
+    font-weight:600;font-size:13.5px;letter-spacing:.5px;cursor:pointer;
+    box-shadow:0 3px 0 #0d5c39, inset 0 1px 0 rgba(255,255,255,.2);
+  }
+  .add-btn:active{transform:translateY(2px);box-shadow:0 1px 0 #0d5c39;}
+  .add-btn[disabled]{opacity:.4;}
+
+  /* -------- TICKET LOG -------- */
+  .ticket{background:var(--paper);margin-top:18px;border-radius:2px;padding:14px 16px 16px;box-shadow:0 10px 24px -10px rgba(0,0,0,.5);position:relative;}
+  .ticket::before,.ticket::after{content:"";position:absolute;left:0;right:0;height:8px;background:radial-gradient(circle,transparent 55%,var(--paper) 58%) 0 0/12px 12px repeat-x;}
+  .ticket::before{top:-6px;}.ticket::after{bottom:-6px;transform:rotate(180deg);}
+  .ticket h3{margin:0 0 8px;font-size:13px;letter-spacing:1.2px;color:var(--ink);border-bottom:1px dashed #b8ac8c;padding-bottom:8px;font-weight:600;}
+  .ticket .empty{font-size:12px;color:var(--ink-dim);font-style:italic;padding:6px 0;}
+  .move-row{display:flex;justify-content:space-between;font-family:'Share Tech Mono',monospace;font-size:12px;color:var(--ink);padding:3px 0;}
+  .move-row .m-cat{color:var(--ink-dim);}
+  .move-row.expense{color:#b23a2f;}
+  .move-row.expense .m-cat{color:#c97364;}
+  .move-list{max-height:170px;overflow-y:auto;}
+  .undo-link{display:inline-block;margin-top:8px;font-size:11.5px;color:#b23a2f;text-decoration:underline;cursor:pointer;background:none;border:none;font-family:'Oswald',sans-serif;padding:0;}
+
+  /* -------- HISTORICO GRID -------- */
+  .hist-wrap{overflow-x:auto;}
+  table.grid{border-collapse:collapse;width:100%;min-width:620px;font-family:'Share Tech Mono',monospace;font-size:11px;}
+  table.grid th{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:.5px;color:var(--ink-dim);text-align:right;padding:5px 6px;border-bottom:1px dashed #b8ac8c;}
+  table.grid th:first-child, table.grid td:first-child{text-align:left;}
+  table.grid td{padding:6px 6px;text-align:right;border-bottom:1px solid #ded3b4;color:var(--ink);}
+  table.grid tr.grid-row{cursor:pointer;}
+  table.grid tr.grid-row:active{background:var(--paper-2);}
+  table.grid td.total-cell{font-weight:700;color:#6b4e14;}
+  table.grid td.sent-cell{text-align:center;color:#1e8f5b;font-weight:700;}
+
+  .subtitle-toggle{text-align:center;margin-top:9px;font-size:10.5px;color:#8a8a8f;letter-spacing:.4px;}
+  .test-link{
+    display:block;margin:4px auto 0;text-align:center;font-size:10.5px;color:#7fb8ff;
+    text-decoration:underline;cursor:pointer;background:none;border:none;font-family:'Oswald',sans-serif;padding:2px;
+  }
+
+  /* -------- MODAL -------- */
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:18px;z-index:50;}
+  .modal{background:var(--paper);border-radius:6px;padding:20px;max-width:340px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.5);max-height:85vh;overflow-y:auto;}
+  .modal h4{margin:0 0 8px;font-size:15px;color:var(--ink);}
+  .modal p{margin:0 0 14px;font-size:13px;color:#5a5246;line-height:1.5;}
+  .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px;flex-wrap:wrap;}
+  .modal-actions button{border:none;border-radius:5px;padding:8px 14px;font-family:'Oswald',sans-serif;font-weight:600;font-size:12.5px;cursor:pointer;}
+  .modal-cancel{background:#e2d9c2;color:#5a5246;}
+  .modal-confirm{background:#1e8f5b;color:#fff;}
+  .modal-danger{background:#c73b32;color:#fff;}
+  .field{margin-bottom:10px;}
+  .field label{display:block;font-size:11px;color:var(--ink-dim);margin-bottom:3px;letter-spacing:.3px;}
+  .field select, .field input{
+    width:100%;padding:8px 9px;border-radius:5px;border:1px solid #cbbf9d;background:#fff;
+    font-family:'Share Tech Mono',monospace;font-size:16px;color:var(--ink);
+  }
+  .correct-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .admin-row{
+    background:var(--key-dark);border-radius:10px;padding:10px 12px;margin-bottom:10px;
+  }
+  .admin-row-title{font-size:12.5px;color:var(--led-green);font-weight:600;letter-spacing:.5px;margin-bottom:8px;}
+  .admin-row .correct-grid{gap:8px;}
+  .admin-row .field{margin-bottom:0;}
+  .admin-row .field label{color:#9a9a9e;}
+  .admin-row .field input{background:#0c0c0e;color:var(--led-green);border:1px solid #000;}
+  .hidden{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ============ PANTALLA DE LOGIN ============ -->
+  <div class="device" id="screenLogin">
+    <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+    <div class="brand-plate">
+      <span class="brand">TAXITRONIC TX12460</span>
+      <span class="clock" id="clockLogin">--:--:--</span>
+    </div>
+    <div class="menu-intro">Inicia sesión para continuar</div>
+
+    <div class="field">
+      <label>Usuario</label>
+      <select id="loginUser" autocomplete="off">
+        <option value="" selected disabled>— Elige tu usuario —</option>
+        <option value="12460">12460</option>
+        <option value="12453">12453</option>
+        <option value="3493">3493</option>
+        <option value="12614">12614</option>
+        <option value="12553">12553</option>
+        <option value="admin">admin</option>
+      </select>
+    </div>
+    <div class="field">
+      <label>Contraseña</label>
+      <input type="password" id="loginPass" inputmode="numeric" autocomplete="off">
+    </div>
+    <div id="loginError" style="display:none;color:#ff6b5a;font-size:12px;margin-bottom:8px;text-align:center;"></div>
+    <button class="add-btn" id="btnLogin">ENTRAR</button>
+  </div>
+
+  <!-- ============ PANTALLA DE INICIO ============ -->
+  <div class="device hidden" id="screenHome">
+    <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+    <div class="brand-plate">
+      <span class="brand" id="brandHome">TAXITRONIC TX12460</span>
+      <span class="clock" id="clockHome">--:--:--</span>
+    </div>
+    <button class="back-btn" id="btnLogoutHome" style="margin-bottom:0;">cerrar sesión ‹</button>
+    <div class="menu-intro">Elige qué quieres hacer:</div>
+
+    <button class="menu-btn" id="btnGoDaily">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#08321f" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></span>
+      <span class="txt"><span class="t1">HOJA DIARIA</span><span class="t2">Meter importes y gastos del día</span></span>
+    </button>
+
+    <button class="menu-btn billing" id="btnGoBilling">
+      <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="#3a2308" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="M7 15l4-4 3 3 5-6"/></svg></span>
+      <span class="txt"><span class="t1">FACTURACIÓN</span><span class="t2">Totales entre dos fechas</span></span>
+    </button>
+  </div>
+
+  <!-- ============ PANTALLA HOJA DIARIA ============ -->
+  <div id="screenDaily" class="hidden">
+  <div class="device">
+    <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+
+    <button class="back-btn" data-go="home">‹ INICIO</button>
+
+    <div class="brand-plate">
+      <span class="brand" id="brandDaily">TAXITRONIC TX12460</span>
+      <span class="clock" id="clock">--:--:--</span>
+    </div>
+
+    <div class="date-bar">
+      <label>DÍA A INTRODUCIR</label>
+      <input type="date" id="workDate">
+      <button class="date-today" id="btnToday">HOY</button>
+    </div>
+
+    <div class="refuerzo-bar">
+      <label>¿ES REFUERZO?</label>
+      <label class="switch">
+        <input type="checkbox" id="refuerzoToggle">
+        <span class="slider"></span>
+      </label>
+    </div>
+
+    <div class="screen">
+      <div class="display-label">TOTAL FACTURADO</div>
+      <div class="display-total" id="totalDisplay">0.00 €</div>
+      <div class="display-meta">
+        <span id="periodMeta">--/--/----</span>
+        <span class="sent-badge hidden" id="sentBadge">ENVIADA ✓</span>
+      </div>
+      <div class="display-meta2" id="metaGastos">Gastos: 0.00 € · Neto: 0.00 €</div>
+      <div class="display-meta2" id="metaFijo">Fijo diario: 0.00 €</div>
+    </div>
+
+    <div class="cat-tiles" id="catTabs">
+      <div class="cat-tile" data-cat="efectivo">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">EFECTIVO</span></div>
+        <div class="tile-val" id="miniEfectivo">0.00</div>
+      </div>
+      <div class="cat-tile" data-cat="tarjeta">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">TARJETA</span></div>
+        <div class="tile-val" id="miniTarjeta">0.00</div>
+      </div>
+      <div class="cat-tile" data-cat="emisora">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">EMISORA</span></div>
+        <div class="tile-val" id="miniEmisora">0.00</div>
+      </div>
+    </div>
+    <div class="cat-tiles" id="catTabs2">
+      <div class="cat-tile" data-cat="uber">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">UBER</span></div>
+        <div class="tile-val" id="miniUber">0.00</div>
+      </div>
+      <div class="cat-tile" data-cat="freenow">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">FREENOW</span></div>
+        <div class="tile-val" id="miniFreenow">0.00</div>
+      </div>
+      <div class="cat-tile" data-cat="bolt">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">BOLT</span></div>
+        <div class="tile-val" id="miniBolt">0.00</div>
+      </div>
+    </div>
+
+    <div class="cat-tiles cols-2" id="catTabsGastos">
+      <div class="cat-tile" data-cat="combustible">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">COMBUSTIBLE</span></div>
+        <div class="tile-val" id="miniCombustible">0.00</div>
+      </div>
+      <div class="cat-tile" data-cat="otros">
+        <div class="tile-head"><span class="dot"></span><span class="lbl">OTROS GASTOS</span></div>
+        <div class="tile-val" id="miniOtros">0.00</div>
+      </div>
+    </div>
+    <div class="mini-row">
+      <div class="mini" style="grid-column:span 3"><div class="mini-label">GASTOS TOTALES HOY</div><div class="mini-val" id="miniGastos">0.00</div></div>
+    </div>
+
+    <div class="keypad-block">
+      <div class="entry-screen">
+        <span class="entry-cat" id="entryCatLabel">EFECTIVO</span>
+        <span class="entry-val" id="entryVal">0,00</span>
+      </div>
+      <div class="keypad-row">
+        <div class="keys">
+          <button class="key" data-d="1">1</button><button class="key" data-d="2">2</button><button class="key" data-d="3">3</button>
+          <button class="key" data-d="4">4</button><button class="key" data-d="5">5</button><button class="key" data-d="6">6</button>
+          <button class="key" data-d="7">7</button><button class="key" data-d="8">8</button><button class="key" data-d="9">9</button>
+          <button class="key fn" id="keyClear">C</button><button class="key" data-d="0">0</button><button class="key fn" id="keyComma">,</button>
+        </div>
+        <div class="side-actions">
+          <button class="side-btn ok" id="keyOk" title="Añadir a la categoría marcada">OK</button>
+          <button class="side-btn" id="btnEnviar" title="Enviar hoja diaria">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7Z"/></svg>
+            ENVIAR HOJA DIARIA
+          </button>
+          <button class="side-btn soft" id="btnCorregir" title="Corregir">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>
+            CORREGIR
+          </button>
+          <button class="side-btn soft" id="btnHist" title="Histórico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="#111" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+            HISTÓRICO
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="subtitle-toggle">Escribe el importe y toca la categoría (o pulsa OK) para añadirlo. Los datos se guardan en el dispositivo al momento; se mandan a Google Sheets solo al pulsar "Enviar hoja diaria".</div>
+    <div class="subtitle-toggle" id="syncStatus" style="margin-top:4px;"></div>
+    <button class="test-link" id="btnTestSync">🔧 probar conexión con Google Sheets</button>
+  </div>
+
+  <div class="ticket">
+    <h3>REGISTRO DE HOY</h3>
+    <div class="move-list" id="moveList"><div class="empty">Sin apuntes registrados todavía.</div></div>
+    <button class="undo-link hidden" id="undoLink">deshacer último apunte</button>
+  </div>
+
+  <div class="ticket hidden" id="histPanel">
+    <h3>HISTÓRICO · CUADRÍCULA POR DÍA</h3>
+    <div class="hist-wrap">
+      <table class="grid">
+        <thead><tr><th>Fecha</th><th>Efec.</th><th>Tarj.</th><th>Uber</th><th>Free.</th><th>Bolt</th><th>Emis.</th><th>Factur.</th><th>Combust.</th><th>Otros</th><th>Neto</th><th>✓</th></tr></thead>
+        <tbody id="histBody"></tbody>
+      </table>
+    </div>
+    <button class="undo-link" id="btnWipeAll" style="color:#c73b32;">🗑 borrar todo el historial</button>
+  </div>
+
+  </div>
+
+  <!-- ============ PANTALLA FACTURACIÓN ============ -->
+  <div id="screenBilling" class="hidden">
+  <div class="device">
+    <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+
+    <button class="back-btn" data-go="home">‹ INICIO</button>
+
+    <div class="brand-plate">
+      <span class="brand" id="brandBilling">TAXITRONIC TX12460</span>
+      <span class="clock" id="clockBilling">--:--:--</span>
+    </div>
+
+    <div class="range-fields">
+      <label>DESDE</label>
+      <input type="date" id="billFrom">
+      <label>HASTA</label>
+      <input type="date" id="billTo">
+    </div>
+    <button class="add-btn" id="btnCalcular">CALCULAR FACTURACIÓN</button>
+
+    <div class="screen">
+      <div class="display-label">FACTURADO EN EL PERIODO</div>
+      <div class="display-total" id="billTotalDisplay">0.00 €</div>
+      <div class="display-meta">
+        <span id="billPeriodMeta">-- · 0 días</span>
+      </div>
+      <div class="display-meta2" id="billMetaGastos">Gastos: 0.00 € · Neto: 0.00 €</div>
+    </div>
+
+    <div class="mini-row">
+      <div class="mini"><div class="mini-label">EFECTIVO</div><div class="mini-val" id="billMiniEfectivo">0.00</div></div>
+      <div class="mini"><div class="mini-label">TARJETA</div><div class="mini-val" id="billMiniTarjeta">0.00</div></div>
+      <div class="mini"><div class="mini-label">EMISORA</div><div class="mini-val" id="billMiniEmisora">0.00</div></div>
+    </div>
+    <div class="mini-row">
+      <div class="mini"><div class="mini-label">UBER</div><div class="mini-val" id="billMiniUber">0.00</div></div>
+      <div class="mini"><div class="mini-label">FREENOW</div><div class="mini-val" id="billMiniFreenow">0.00</div></div>
+      <div class="mini"><div class="mini-label">BOLT</div><div class="mini-val" id="billMiniBolt">0.00</div></div>
+    </div>
+    <div class="mini-row">
+      <div class="mini"><div class="mini-label">COMBUST.</div><div class="mini-val" id="billMiniCombustible">0.00</div></div>
+      <div class="mini"><div class="mini-label">OTROS</div><div class="mini-val" id="billMiniOtros">0.00</div></div>
+      <div class="mini"><div class="mini-label">GASTOS</div><div class="mini-val" id="billMiniGastos">0.00</div></div>
+    </div>
+
+    <div class="subtitle-toggle">Suma todos los días con datos entre las dos fechas (ambas incluidas).</div>
+  </div>
+
+  <div class="ticket">
+    <h3>DESGLOSE POR DÍA EN EL PERIODO</h3>
+    <div class="hist-wrap">
+      <table class="grid">
+        <thead><tr><th>Fecha</th><th>Efec.</th><th>Tarj.</th><th>Uber</th><th>Free.</th><th>Bolt</th><th>Emis.</th><th>Factur.</th><th>Combust.</th><th>Otros</th><th>Neto</th><th>✓</th></tr></thead>
+        <tbody id="billBody"><tr><td colspan="12" style="text-align:center;color:var(--ink-dim);font-style:italic;">Pulsa "Calcular facturación".</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+  </div>
+
+  <!-- ============ PANTALLA ADMIN ============ -->
+  <div id="screenAdmin" class="hidden">
+  <div class="device">
+    <span class="screw tl"></span><span class="screw tr"></span><span class="screw bl"></span><span class="screw br"></span>
+
+    <button class="back-btn" id="btnLogoutAdmin">cerrar sesión ‹</button>
+
+    <div class="brand-plate">
+      <span class="brand" id="brandAdmin">ADMIN · TAXITRONIC TX12460</span>
+      <span class="clock" id="clockAdmin">--:--:--</span>
+    </div>
+
+    <div class="menu-intro">Contraseñas y fijo diario de cada licencia:</div>
+
+    <div id="adminUserList"></div>
+
+    <div class="admin-row" data-user="admin">
+      <div class="admin-row-title">Cuenta ADMIN</div>
+      <div class="field"><label>Nueva contraseña de admin</label><input type="text" id="adminOwnPass" placeholder="admin00"></div>
+    </div>
+
+    <button class="add-btn" id="btnAdminSave">GUARDAR CAMBIOS</button>
+    <div id="adminSaveStatus" style="text-align:center;font-size:11px;margin-top:6px;color:var(--led-green);height:14px;"></div>
+  </div>
+  </div>
+
+</div>
+
+<!-- ENVIAR MODAL -->
+<div class="modal-overlay hidden" id="sendModal">
+  <div class="modal">
+    <h4>Enviar hoja diaria</h4>
+    <p>Se guardará una única fila con el desglose actual del día seleccionado (<span id="sendDateLabel"></span>) en tu Google Sheet, y se marcará como enviada. Si vuelves a enviar la misma hoja más tarde, esa fila se actualiza (no se duplica).</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="cancelSend">Cancelar</button>
+      <button class="modal-confirm" id="confirmSend">Enviar hoja</button>
+    </div>
+  </div>
+</div>
+
+<!-- RESULTADO DEL ENVÍO (no se puede pasar por alto) -->
+<div class="modal-overlay hidden" id="syncResultModal">
+  <div class="modal">
+    <h4 id="syncResultTitle">Resultado del envío</h4>
+    <p id="syncResultText" style="white-space:pre-wrap;"></p>
+    <div class="modal-actions">
+      <button class="modal-confirm" id="syncResultClose">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- CORREGIR MODAL -->
+<div class="modal-overlay hidden" id="fixModal">
+  <div class="modal">
+    <h4>Corregir un día</h4>
+    <div class="field">
+      <label>Selecciona la fecha</label>
+      <select id="fixDateSelect"></select>
+    </div>
+    <div class="correct-grid">
+      <div class="field"><label>Efectivo (€)</label><input type="number" step="0.01" min="0" id="fixEfectivo"></div>
+      <div class="field"><label>Tarjeta (€)</label><input type="number" step="0.01" min="0" id="fixTarjeta"></div>
+      <div class="field"><label>Uber (€)</label><input type="number" step="0.01" min="0" id="fixUber"></div>
+      <div class="field"><label>Freenow (€)</label><input type="number" step="0.01" min="0" id="fixFreenow"></div>
+      <div class="field"><label>Bolt (€)</label><input type="number" step="0.01" min="0" id="fixBolt"></div>
+      <div class="field"><label>Emisora (€)</label><input type="number" step="0.01" min="0" id="fixEmisora"></div>
+      <div class="field"><label>Combustible (€)</label><input type="number" step="0.01" min="0" id="fixCombustible"></div>
+      <div class="field"><label>Otros gastos (€)</label><input type="number" step="0.01" min="0" id="fixOtros"></div>
+      <div class="field"><label>Refuerzo</label>
+        <select id="fixRefuerzo"><option value="no">No</option><option value="si">Sí</option></select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-danger" id="fixDelete">Eliminar día</button>
+      <button class="modal-cancel" id="cancelFix">Cancelar</button>
+      <button class="modal-confirm" id="confirmFix">Guardar corrección</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE DAY CONFIRM (paso 1) -->
+<div class="modal-overlay hidden" id="delModal">
+  <div class="modal">
+    <h4>Eliminar día</h4>
+    <p>Se borrarán permanentemente todos los datos de ese día.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="cancelDel">Cancelar</button>
+      <button class="modal-danger" id="confirmDel">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<!-- DELETE DAY CONFIRM (paso 2, doble confirmación) -->
+<div class="modal-overlay hidden" id="delModal2">
+  <div class="modal">
+    <h4>⚠ ¿Seguro del todo?</h4>
+    <p>Esta es la última confirmación. Los datos de <b id="delDateLabel2"></b> se eliminarán para siempre y no se pueden recuperar.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="cancelDel2">Cancelar</button>
+      <button class="modal-danger" id="confirmDel2">Sí, eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<!-- DÍA CERRADO (ya enviado) -->
+<div class="modal-overlay hidden" id="lockedModal">
+  <div class="modal">
+    <h4>🔒 Hoja ya enviada</h4>
+    <p>Este día ya se envió y quedó cerrado, así que no se puede seguir añadiendo directamente. Si necesitas cambiar algo, usa el botón <b>Corregir</b>.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="lockedCancel">Entendido</button>
+      <button class="modal-confirm" id="lockedGoFix">Abrir Corregir</button>
+    </div>
+  </div>
+</div>
+
+<!-- BORRAR TODO EL HISTORIAL (paso 1) -->
+<div class="modal-overlay hidden" id="wipeModal">
+  <div class="modal">
+    <h4>Borrar todo el historial</h4>
+    <p>Esto eliminará <b>todos los días guardados</b>, no solo uno. Los datos que ya hayas enviado a Google Sheets no se tocan, solo lo que hay en este dispositivo.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="cancelWipe">Cancelar</button>
+      <button class="modal-danger" id="confirmWipe">Borrar todo</button>
+    </div>
+  </div>
+</div>
+
+<!-- BORRAR TODO EL HISTORIAL (paso 2, doble confirmación) -->
+<div class="modal-overlay hidden" id="wipeModal2">
+  <div class="modal">
+    <h4>⚠ ¿Seguro del todo?</h4>
+    <p>Última confirmación: se borrarán <b>todos</b> los días guardados en este dispositivo, sin excepción, y no se puede deshacer.</p>
+    <div class="modal-actions">
+      <button class="modal-cancel" id="cancelWipe2">Cancelar</button>
+      <button class="modal-danger" id="confirmWipe2">Sí, borrar todo el historial</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==== SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script) ====
+// Pega aquí la URL de tu Web App tras desplegar apps-script/Code.gs (ver README.md).
+// Déjalo vacío ('') para trabajar solo en local, sin sincronizar.
+const SYNC_URL = 'https://script.google.com/macros/s/AKfycbxwfJFw8fQLMT4-Jr6Ih-a5NVnUt-3bL5uskAmSv9uyF6OD_p2VFfVcd_vo0DlGER3hLw/exec';
+
+async function syncDayToSheet(date){
+  const statusEl = document.getElementById('syncStatus');
+  if(!SYNC_URL){
+    const msg = 'Sin URL de Apps Script configurada (SYNC_URL vacío) — solo se guarda en este dispositivo.';
+    if(statusEl){ statusEl.textContent = '⚠ ' + msg; statusEl.style.color = '#ffb04b'; }
+    showSyncResult('⚠ No se pudo enviar', msg, false);
+    return;
+  }
+  try{
+    const d = days[date];
+    if(!d) return;
+    const res = await fetch(SYNC_URL, {
+      method: 'POST',
+      headers: {'Content-Type': 'text/plain;charset=utf-8'}, // evita preflight CORS en Apps Script
+      body: JSON.stringify({
+        date,
+        licencia: currentUser,
+        efectivo: d.efectivo, tarjeta: d.tarjeta, uber: d.uber, freenow: d.freenow,
+        bolt: d.bolt, emisora: d.emisora, combustible: d.combustible, otros: d.otros,
+        enviada: !!d.sent,
+        refuerzo: !!d.refuerzo
+      })
+    });
+    let json = null;
+    let rawText = '';
+    try{ rawText = await res.clone().text(); }catch(_e){}
+    try{ json = await res.json(); }catch(_e){ /* respuesta no JSON */ }
+    if(json && json.ok){
+      let pdfBit = '';
+      let pdfLine = '';
+      if(d.sent){
+        if(json.pdfUrl){ pdfBit = ' · PDF generado ✓'; pdfLine = '\nPDF: ' + json.pdfUrl; }
+        else if(json.pdfError){ pdfBit = ' · ⚠ PDF: ' + json.pdfError; pdfLine = '\n⚠ El Excel se guardó bien, pero el PDF falló:\n' + json.pdfError; }
+        else { pdfBit = ' · ⚠ sin PDF (motivo desconocido)'; pdfLine = '\n⚠ El Excel se guardó bien, pero no se generó PDF (sin motivo indicado).'; }
+      }
+      if(statusEl){ statusEl.textContent = '☁ Sincronizado con Google Sheets' + pdfBit + ' · ' + new Date().toLocaleTimeString('es-ES'); statusEl.style.color = json.pdfError ? '#ffb04b' : 'var(--led-green)'; }
+      showSyncResult('☁ Guardado en Google Sheets', 'Fila guardada correctamente en "Datos diarios".' + pdfLine, !json.pdfError);
+      if(json.pdfUrl) console.log('PDF generado:', json.pdfUrl);
+    } else {
+      const msg = (json && json.error) ? json.error : ('HTTP ' + res.status + (rawText ? ('\n\nRespuesta del servidor:\n' + rawText.slice(0,400)) : ''));
+      if(statusEl){ statusEl.textContent = '⚠ Error al sincronizar: ' + msg; statusEl.style.color = '#ff6b5a'; }
+      showSyncResult('⚠ No se pudo guardar en Sheets', msg, false);
+      console.error('TAXITRONIC sync error:', msg);
+    }
+  }catch(e){
+    const msg = 'No se pudo contactar con Apps Script.\nMotivo técnico: ' + (e && e.message ? e.message : e) + '\n\nRevisa que la URL SYNC_URL sea correcta y que la implementación esté activa como "Cualquier usuario".';
+    if(statusEl){ statusEl.textContent = '⚠ No se pudo contactar con Apps Script (revisa la URL o tu conexión).'; statusEl.style.color = '#ff6b5a'; }
+    showSyncResult('⚠ Sin conexión con Apps Script', msg, false);
+    console.error('TAXITRONIC sync fetch error:', e);
+  }
+}
+
+function showSyncResult(title, text, ok){
+  document.getElementById('syncResultTitle').textContent = title;
+  document.getElementById('syncResultText').textContent = text;
+  document.getElementById('syncResultText').style.color = ok ? '#2b2620' : '#b23a2f';
+  document.getElementById('syncResultModal').classList.remove('hidden');
+}
+document.getElementById('syncResultClose').addEventListener('click', ()=>{
+  document.getElementById('syncResultModal').classList.add('hidden');
+});
+
+async function testConnection(){
+  const statusEl = document.getElementById('syncStatus');
+  if(!statusEl) return;
+  if(!SYNC_URL){
+    statusEl.textContent = '⚠ SYNC_URL está vacío en el código: pega tu URL de Apps Script (termina en /exec).';
+    statusEl.style.color = '#ffb04b';
+    return;
+  }
+  statusEl.textContent = '… probando conexión con Apps Script';
+  statusEl.style.color = '#9a9a9e';
+  try{
+    const res = await fetch(SYNC_URL, { method: 'GET' });
+    let json = null;
+    try{ json = await res.json(); }catch(_e){ /* no era JSON */ }
+    if(json && json.ok){
+      statusEl.textContent = '☁ Conexión OK: ' + (json.message || 'endpoint activo');
+      statusEl.style.color = 'var(--led-green)';
+    } else {
+      statusEl.textContent = '⚠ El servidor respondió pero algo falla (HTTP ' + res.status + '). Revisa que Code.gs y appsscript.json estén bien pegados y vuelve a implementar.';
+      statusEl.style.color = '#ff6b5a';
+    }
+  }catch(e){
+    statusEl.textContent = '⚠ No se pudo conectar. Prueba a abrir tu URL de Apps Script directamente en una pestaña del navegador: si no ves un JSON con "ok":true, el despliegue no está bien hecho (revisa acceso "Cualquier usuario").';
+    statusEl.style.color = '#ff6b5a';
+    console.error('TAXITRONIC test connection error:', e);
+  }
+}
+document.getElementById('btnTestSync').addEventListener('click', testConnection);
+
+// ==== USUARIOS Y SESIÓN ====
+const DEFAULT_USERS = {
+  '12460': {password:'0',     fijo:120, isAdmin:false},
+  '12453': {password:'11',    fijo:130, isAdmin:false},
+  '3493':  {password:'222',   fijo:130, isAdmin:false},
+  '12614': {password:'3333',  fijo:120, isAdmin:false},
+  '12553': {password:'4444',  fijo:130, isAdmin:false},
+  'admin': {password:'admin00', fijo:null, isAdmin:true}
+};
+let usersConfig = {};
+let currentUser = null;
+
+function loadUsersConfig(){
+  let saved = {};
+  try{ const raw = localStorage.getItem('taxi:users-config'); saved = raw ? JSON.parse(raw) : {}; }catch(e){}
+  const merged = {};
+  Object.keys(DEFAULT_USERS).forEach(u=>{
+    merged[u] = Object.assign({}, DEFAULT_USERS[u], saved[u]||{});
+  });
+  usersConfig = merged;
+}
+function saveUsersConfig(){
+  try{ localStorage.setItem('taxi:users-config', JSON.stringify(usersConfig)); }catch(e){}
+}
+
+function doLogin(user, pass){
+  const u = usersConfig[user];
+  if(!u || u.password !== pass) return false;
+  currentUser = user;
+  try{ localStorage.setItem('taxi:currentUser', user); }catch(e){}
+  return true;
+}
+function doLogout(){
+  currentUser = null;
+  try{ localStorage.removeItem('taxi:currentUser'); }catch(e){}
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
+  showScreen('login');
+}
+
+document.getElementById('btnLogin').addEventListener('click', ()=>{
+  const user = document.getElementById('loginUser').value;
+  const pass = document.getElementById('loginPass').value;
+  const errEl = document.getElementById('loginError');
+  if(!user){
+    errEl.textContent = 'Elige primero tu usuario.';
+    errEl.style.display = 'block';
+    return;
+  }
+  if(doLogin(user, pass)){
+    errEl.style.display = 'none';
+    document.getElementById('loginPass').value = '';
+    enterApp();
+  } else {
+    errEl.textContent = 'Usuario o contraseña incorrectos.';
+    errEl.style.display = 'block';
+  }
+});
+document.getElementById('loginPass').addEventListener('keydown', e=>{
+  if(e.key === 'Enter') document.getElementById('btnLogin').click();
+});
+document.getElementById('btnLogoutHome').addEventListener('click', doLogout);
+document.getElementById('btnLogoutAdmin').addEventListener('click', doLogout);
+
+function enterApp(){
+  const label = 'TAXITRONIC TX' + String(currentUser).toUpperCase();
+  ['brandHome','brandDaily','brandBilling','brandAdmin'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = label;
+  });
+  if(usersConfig[currentUser].isAdmin){
+    renderAdminList();
+    showScreen('admin');
+  } else {
+    entryStr = '';
+    activeCat = 'efectivo';
+    selectedDate = todayISO();
+    loadState();
+    render();
+    showScreen('home');
+  }
+}
+
+function renderAdminList(){
+  const wrap = document.getElementById('adminUserList');
+  const regularUsers = Object.keys(usersConfig).filter(u => !usersConfig[u].isAdmin);
+  wrap.innerHTML = regularUsers.map(u=>{
+    const cfg = usersConfig[u];
+    return `<div class="admin-row" data-user="${u}">
+      <div class="admin-row-title">Licencia ${u}</div>
+      <div class="correct-grid">
+        <div class="field"><label>Contraseña</label><input type="text" class="admin-pass" value="${cfg.password}"></div>
+        <div class="field"><label>Fijo diario (€)</label><input type="number" step="1" class="admin-fijo" value="${cfg.fijo}"></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+document.getElementById('btnAdminSave').addEventListener('click', ()=>{
+  document.querySelectorAll('#adminUserList .admin-row').forEach(row=>{
+    const u = row.dataset.user;
+    const pass = row.querySelector('.admin-pass').value.trim();
+    const fijo = parseFloat(row.querySelector('.admin-fijo').value) || 0;
+    if(pass) usersConfig[u].password = pass;
+    usersConfig[u].fijo = fijo;
+  });
+  const ownPass = document.getElementById('adminOwnPass').value.trim();
+  if(ownPass){ usersConfig['admin'].password = ownPass; document.getElementById('adminOwnPass').value = ''; }
+  saveUsersConfig();
+  const status = document.getElementById('adminSaveStatus');
+  status.textContent = '✓ Cambios guardados';
+  setTimeout(()=> status.textContent = '', 2500);
+});
+
+const CAT_LABELS = {efectivo:'Efectivo', tarjeta:'Tarjeta', uber:'Uber', freenow:'Freenow', bolt:'Bolt', emisora:'Emisora', combustible:'Combustible', otros:'Otros gastos'};
+let days = {};          // { 'YYYY-MM-DD': {efectivo,tarjeta,uber,freenow,bolt,emisora,combustible,otros,movements:[{cat,amount,ts}],sent:bool,sentAt} }
+let activeCat = 'efectivo';
+let selectedDate = todayISO();
+let entryStr = '';
+let fixDeleteTarget = null;
+const EXPENSE_CATS = ['combustible','otros'];
+
+function fmt(n){ return (n||0).toLocaleString('es-ES',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function todayISO(){ return new Date().toISOString().slice(0,10); }
+function fmtDate(iso){ const [y,m,d]=iso.split('-'); return `${d}/${m}/${y}`; }
+function blankDay(){ return {efectivo:0,tarjeta:0,uber:0,freenow:0,bolt:0,emisora:0,combustible:0,otros:0,movements:[],sent:false,sentAt:null,refuerzo:false}; }
+function getDay(date){ if(!days[date]) days[date] = blankDay(); return days[date]; }
+function dayTotal(d){ return d.efectivo+d.tarjeta+d.uber+d.freenow+d.bolt+d.emisora; }
+function dayExpenses(d){ return (d.combustible||0)+(d.otros||0); }
+function dayNet(d){ return dayTotal(d)-dayExpenses(d); }
+
+function loadState(){
+  try{
+    const raw = localStorage.getItem('taxi:days:' + currentUser);
+    days = raw ? JSON.parse(raw) : {};
+    // migración: la antigua categoría "apps" pasa a contarse como Uber
+    Object.values(days).forEach(d=>{
+      if(d && typeof d.apps === 'number'){
+        d.uber = (d.uber||0) + d.apps;
+        d.freenow = d.freenow||0; d.bolt = d.bolt||0;
+        delete d.apps;
+      }
+      if(d){ d.combustible = d.combustible||0; d.otros = d.otros||0; d.refuerzo = !!d.refuerzo; }
+    });
+  }catch(e){ days = {}; }
+}
+function saveState(){
+  try{ localStorage.setItem('taxi:days:' + currentUser, JSON.stringify(days)); }catch(e){}
+}
+
+function renderClock(){
+  const now = new Date();
+  const t = now.toLocaleTimeString('es-ES');
+  ['clock','clockHome','clockBilling','clockLogin','clockAdmin'].forEach(id=>{
+    const el = document.getElementById(id);
+    if(el) el.textContent = t;
+  });
+}
+setInterval(renderClock, 1000); renderClock();
+
+/* ---- navegación entre pantallas ---- */
+function showScreen(name){
+  document.getElementById('screenLogin').classList.toggle('hidden', name!=='login');
+  document.getElementById('screenHome').classList.toggle('hidden', name!=='home');
+  document.getElementById('screenDaily').classList.toggle('hidden', name!=='daily');
+  document.getElementById('screenBilling').classList.toggle('hidden', name!=='billing');
+  document.getElementById('screenAdmin').classList.toggle('hidden', name!=='admin');
+  if(name==='login'){
+    document.getElementById('loginUser').value = '';
+    document.getElementById('loginPass').value = '';
+    document.getElementById('loginError').style.display = 'none';
+  }
+  window.scrollTo(0,0);
+}
+document.getElementById('btnGoDaily').addEventListener('click', ()=> showScreen('daily'));
+document.getElementById('btnGoBilling').addEventListener('click', ()=>{
+  if(!document.getElementById('billFrom').value || !document.getElementById('billTo').value){
+    const now = new Date();
+    const firstOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    document.getElementById('billFrom').value = firstOfMonth.toISOString().slice(0,10);
+    document.getElementById('billTo').value = todayISO();
+  }
+  showScreen('billing');
+  calcularFacturacion();
+});
+document.querySelectorAll('.back-btn[data-go="home"]').forEach(b=>{
+  b.addEventListener('click', ()=> showScreen('home'));
+});
+
+/* ---- facturación por rango de fechas ---- */
+function calcularFacturacion(){
+  const from = document.getElementById('billFrom').value;
+  const to = document.getElementById('billTo').value;
+  if(!from || !to) return;
+  const [start,end] = from<=to ? [from,to] : [to,from];
+  const dates = Object.keys(days).filter(dt => dt>=start && dt<=end && days[dt].sent).sort();
+
+  const sum = {efectivo:0,tarjeta:0,uber:0,freenow:0,bolt:0,emisora:0,combustible:0,otros:0};
+  dates.forEach(dt=>{
+    const d = days[dt];
+    Object.keys(sum).forEach(k=> sum[k]+=d[k]||0);
+  });
+  const facturado = sum.efectivo+sum.tarjeta+sum.uber+sum.freenow+sum.bolt+sum.emisora;
+  const gastos = sum.combustible+sum.otros;
+  const neto = facturado-gastos;
+
+  document.getElementById('billTotalDisplay').textContent = fmt(facturado)+' €';
+  document.getElementById('billPeriodMeta').textContent = `${fmtDate(start)} → ${fmtDate(end)} · ${dates.length} día${dates.length!==1?'s':''}`;
+  document.getElementById('billMetaGastos').textContent = `Gastos: ${fmt(gastos)} € · Neto: ${fmt(neto)} €`;
+  document.getElementById('billMiniEfectivo').textContent = fmt(sum.efectivo);
+  document.getElementById('billMiniTarjeta').textContent = fmt(sum.tarjeta);
+  document.getElementById('billMiniEmisora').textContent = fmt(sum.emisora);
+  document.getElementById('billMiniUber').textContent = fmt(sum.uber);
+  document.getElementById('billMiniFreenow').textContent = fmt(sum.freenow);
+  document.getElementById('billMiniBolt').textContent = fmt(sum.bolt);
+  document.getElementById('billMiniCombustible').textContent = fmt(sum.combustible);
+  document.getElementById('billMiniOtros').textContent = fmt(sum.otros);
+  document.getElementById('billMiniGastos').textContent = fmt(gastos);
+
+  const body = document.getElementById('billBody');
+  if(dates.length===0){
+    body.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--ink-dim);font-style:italic;">No hay días con datos en ese rango.</td></tr>';
+  }else{
+    body.innerHTML = dates.slice().reverse().map(dt=>{
+      const d = days[dt];
+      return `<tr>
+        <td>${fmtDate(dt)}</td>
+        <td>${fmt(d.efectivo)}</td>
+        <td>${fmt(d.tarjeta)}</td>
+        <td>${fmt(d.uber)}</td>
+        <td>${fmt(d.freenow)}</td>
+        <td>${fmt(d.bolt)}</td>
+        <td>${fmt(d.emisora)}</td>
+        <td class="total-cell">${fmt(dayTotal(d))}</td>
+        <td>${fmt(d.combustible)}</td>
+        <td>${fmt(d.otros)}</td>
+        <td class="total-cell">${fmt(dayNet(d))}</td>
+        <td class="sent-cell">${d.sent?'✓':'–'}</td>
+      </tr>`;
+    }).join('');
+  }
+}
+document.getElementById('btnCalcular').addEventListener('click', calcularFacturacion);
+
+
+function renderCatTabs(){
+  document.querySelectorAll('.cat-tile').forEach(tab=>{
+    const cat = tab.dataset.cat;
+    tab.classList.toggle('active', cat===activeCat);
+    tab.style.setProperty('--tab-color', getComputedStyle(document.documentElement).getPropertyValue('--cat-'+cat));
+  });
+  const catLabel = document.getElementById('entryCatLabel');
+  if(catLabel){
+    catLabel.textContent = CAT_LABELS[activeCat].toUpperCase();
+    catLabel.style.color = getComputedStyle(document.documentElement).getPropertyValue('--cat-'+activeCat);
+  }
+}
+
+function renderEntry(){
+  document.getElementById('entryVal').textContent = entryStr ? entryStr : '0,00';
+}
+
+function render(){
+  const d = getDay(selectedDate);
+  document.getElementById('workDate').value = selectedDate;
+  const isToday = selectedDate===todayISO();
+  document.getElementById('btnToday').classList.toggle('is-today', isToday);
+  document.getElementById('totalDisplay').textContent = fmt(dayTotal(d))+' €';
+  document.getElementById('miniEfectivo').textContent = fmt(d.efectivo);
+  document.getElementById('miniTarjeta').textContent = fmt(d.tarjeta);
+  document.getElementById('miniEmisora').textContent = fmt(d.emisora);
+  document.getElementById('miniUber').textContent = fmt(d.uber);
+  document.getElementById('miniFreenow').textContent = fmt(d.freenow);
+  document.getElementById('miniBolt').textContent = fmt(d.bolt);
+  document.getElementById('miniCombustible').textContent = fmt(d.combustible);
+  document.getElementById('miniOtros').textContent = fmt(d.otros);
+  document.getElementById('miniGastos').textContent = fmt(dayExpenses(d));
+  document.getElementById('metaGastos').textContent = `Gastos: ${fmt(dayExpenses(d))} € · Neto: ${fmt(dayNet(d))} €`;
+  const fijoVal = (usersConfig[currentUser] && usersConfig[currentUser].fijo) || 0;
+  document.getElementById('metaFijo').textContent = `Fijo diario: ${fmt(fijoVal)} €`;
+  document.getElementById('periodMeta').textContent = `${fmtDate(selectedDate)}${isToday?' (hoy)':''}`;
+  document.getElementById('sentBadge').classList.toggle('hidden', !d.sent);
+  document.getElementById('refuerzoToggle').checked = !!d.refuerzo;
+
+  const list = document.getElementById('moveList');
+  if(d.movements.length===0){
+    list.innerHTML = '<div class="empty">Sin apuntes registrados todavía.</div>';
+    document.getElementById('undoLink').classList.add('hidden');
+  }else{
+    list.innerHTML = d.movements.slice().reverse().map(m=>{
+      const t = new Date(m.ts);
+      const hh = String(t.getHours()).padStart(2,'0'), mm = String(t.getMinutes()).padStart(2,'0');
+      const isExpense = EXPENSE_CATS.includes(m.cat);
+      const sign = isExpense ? '−' : '';
+      return `<div class="move-row ${isExpense?'expense':''}"><span class="m-cat">${hh}:${mm} · ${CAT_LABELS[m.cat]}</span><span>${sign}${fmt(m.amount)} €</span></div>`;
+    }).join('');
+    document.getElementById('undoLink').classList.remove('hidden');
+  }
+
+  renderCatTabs();
+  renderEntry();
+  renderHistGrid();
+}
+
+function renderHistGrid(){
+  const dates = Object.keys(days).filter(dt => days[dt].sent).sort().reverse();
+  const body = document.getElementById('histBody');
+  if(dates.length===0){
+    body.innerHTML = '<tr><td colspan="12" style="text-align:center;color:var(--ink-dim);font-style:italic;">Todavía no hay hojas enviadas. Los días aparecen aquí solo tras pulsar "Enviar hoja diaria".</td></tr>';
+    return;
+  }
+  body.innerHTML = dates.map(date=>{
+    const d = days[date];
+    return `<tr class="grid-row" data-date="${date}">
+      <td>${fmtDate(date)}</td>
+      <td>${fmt(d.efectivo)}</td>
+      <td>${fmt(d.tarjeta)}</td>
+      <td>${fmt(d.uber)}</td>
+      <td>${fmt(d.freenow)}</td>
+      <td>${fmt(d.bolt)}</td>
+      <td>${fmt(d.emisora)}</td>
+      <td class="total-cell">${fmt(dayTotal(d))}</td>
+      <td>${fmt(d.combustible)}</td>
+      <td>${fmt(d.otros)}</td>
+      <td class="total-cell">${fmt(dayNet(d))}</td>
+      <td class="sent-cell">${d.sent?'✓':'–'}</td>
+    </tr>`;
+  }).join('');
+  document.querySelectorAll('.grid-row').forEach(row=>{
+    row.addEventListener('click', ()=> openFixModal(row.dataset.date));
+  });
+}
+
+/* ---- category selection + confirmación de importe (toca la categoría) ---- */
+document.addEventListener('click', async e=>{
+  const tab = e.target.closest('.cat-tile');
+  if(!tab) return;
+  const cat = tab.dataset.cat;
+  const val = parseFloat(entryStr.replace(',','.'));
+  if(val > 0){
+    if(isDayLocked(selectedDate)){ showLockedNotice(); return; }
+    activeCat = cat;
+    const d = getDay(selectedDate);
+    d[cat] = Math.round((d[cat]+val)*100)/100;
+    d.movements.push({cat, amount:Math.round(val*100)/100, ts:Date.now()});
+    entryStr = '';
+    await saveState();
+    render();
+    tab.classList.add('confirm');
+    setTimeout(()=> tab.classList.remove('confirm'), 450);
+  } else {
+    activeCat = cat;
+    renderCatTabs();
+  }
+});
+
+/* ---- keypad ---- */
+document.querySelectorAll('.key[data-d]').forEach(k=>{
+  k.addEventListener('click', ()=>{
+    if(entryStr.replace(',','').length>=6) return;
+    entryStr += k.dataset.d;
+    renderEntry();
+  });
+});
+document.getElementById('keyComma').addEventListener('click', ()=>{
+  if(!entryStr.includes(',')) entryStr += entryStr==='' ? '0,' : ',';
+  renderEntry();
+});
+document.getElementById('keyClear').addEventListener('click', ()=>{
+  entryStr = entryStr.slice(0,-1);
+  renderEntry();
+});
+
+document.getElementById('keyOk').addEventListener('click', async ()=>{
+  const val = parseFloat(entryStr.replace(',','.'));
+  if(!(val>0)) return;
+  if(isDayLocked(selectedDate)){ showLockedNotice(); return; }
+  const d = getDay(selectedDate);
+  d[activeCat] = Math.round((d[activeCat]+val)*100)/100;
+  d.movements.push({cat:activeCat, amount:Math.round(val*100)/100, ts:Date.now()});
+  entryStr = '';
+  await saveState();
+  render();
+  const tile = document.querySelector(`.cat-tile[data-cat="${activeCat}"]`);
+  if(tile){
+    tile.classList.add('confirm');
+    setTimeout(()=> tile.classList.remove('confirm'), 450);
+  }
+});
+
+document.getElementById('undoLink').addEventListener('click', async ()=>{
+  if(isDayLocked(selectedDate)){ showLockedNotice(); return; }
+  const d = getDay(selectedDate);
+  const last = d.movements.pop();
+  if(last){ d[last.cat] = Math.max(0, Math.round((d[last.cat]-last.amount)*100)/100); }
+  await saveState();
+  render();
+});
+
+/* ---- día cerrado (ya enviado): solo editable vía Corregir ---- */
+function isDayLocked(date){ return !!getDay(date).sent; }
+function showLockedNotice(){
+  document.getElementById('lockedModal').classList.remove('hidden');
+}
+document.getElementById('lockedCancel').addEventListener('click', ()=>{
+  document.getElementById('lockedModal').classList.add('hidden');
+});
+document.getElementById('lockedGoFix').addEventListener('click', ()=>{
+  document.getElementById('lockedModal').classList.add('hidden');
+  openFixModal(selectedDate);
+});
+
+/* ---- selector de día de trabajo ---- */
+document.getElementById('workDate').addEventListener('change', e=>{
+  selectedDate = e.target.value || todayISO();
+  render();
+});
+document.getElementById('btnToday').addEventListener('click', ()=>{
+  selectedDate = todayISO();
+  render();
+});
+
+document.getElementById('refuerzoToggle').addEventListener('change', async e=>{
+  if(isDayLocked(selectedDate)){
+    e.target.checked = !e.target.checked; // revierte el toque
+    showLockedNotice();
+    return;
+  }
+  const d = getDay(selectedDate);
+  d.refuerzo = e.target.checked;
+  await saveState();
+});
+
+/* ---- histórico toggle ---- */
+document.getElementById('btnHist').addEventListener('click', ()=>{
+  document.getElementById('histPanel').classList.toggle('hidden');
+});
+
+/* ---- enviar hoja ---- */
+document.getElementById('btnEnviar').addEventListener('click', ()=>{
+  document.getElementById('sendDateLabel').textContent = fmtDate(selectedDate);
+  document.getElementById('sendModal').classList.remove('hidden');
+});
+document.getElementById('cancelSend').addEventListener('click', ()=> document.getElementById('sendModal').classList.add('hidden'));
+document.getElementById('confirmSend').addEventListener('click', async ()=>{
+  const d = getDay(selectedDate);
+  d.sent = true; d.sentAt = Date.now();
+  document.getElementById('sendModal').classList.add('hidden');
+  await saveState();
+  syncDayToSheet(selectedDate);
+  render();
+});
+
+/* ---- corregir ---- */
+function populateFixDates(){
+  const sel = document.getElementById('fixDateSelect');
+  const dates = Object.keys(days).sort().reverse();
+  const today = todayISO();
+  if(!dates.includes(today)) dates.unshift(today);
+  sel.innerHTML = dates.map(dt => `<option value="${dt}">${fmtDate(dt)}${dt===today?' (hoy)':''}</option>`).join('');
+}
+function loadFixValues(date){
+  const d = getDay(date);
+  document.getElementById('fixEfectivo').value = d.efectivo;
+  document.getElementById('fixTarjeta').value = d.tarjeta;
+  document.getElementById('fixUber').value = d.uber;
+  document.getElementById('fixFreenow').value = d.freenow;
+  document.getElementById('fixBolt').value = d.bolt;
+  document.getElementById('fixEmisora').value = d.emisora;
+  document.getElementById('fixCombustible').value = d.combustible;
+  document.getElementById('fixOtros').value = d.otros;
+  document.getElementById('fixRefuerzo').value = d.refuerzo ? 'si' : 'no';
+}
+function openFixModal(date){
+  populateFixDates();
+  const sel = document.getElementById('fixDateSelect');
+  sel.value = date;
+  loadFixValues(sel.value);
+  document.getElementById('fixModal').classList.remove('hidden');
+}
+document.getElementById('btnCorregir').addEventListener('click', ()=> openFixModal(selectedDate));
+document.getElementById('fixDateSelect').addEventListener('change', e=> loadFixValues(e.target.value));
+document.getElementById('cancelFix').addEventListener('click', ()=> document.getElementById('fixModal').classList.add('hidden'));
+document.getElementById('confirmFix').addEventListener('click', async ()=>{
+  const date = document.getElementById('fixDateSelect').value;
+  const d = getDay(date);
+  d.efectivo = Math.max(0, parseFloat(document.getElementById('fixEfectivo').value)||0);
+  d.tarjeta = Math.max(0, parseFloat(document.getElementById('fixTarjeta').value)||0);
+  d.uber = Math.max(0, parseFloat(document.getElementById('fixUber').value)||0);
+  d.freenow = Math.max(0, parseFloat(document.getElementById('fixFreenow').value)||0);
+  d.bolt = Math.max(0, parseFloat(document.getElementById('fixBolt').value)||0);
+  d.emisora = Math.max(0, parseFloat(document.getElementById('fixEmisora').value)||0);
+  d.combustible = Math.max(0, parseFloat(document.getElementById('fixCombustible').value)||0);
+  d.otros = Math.max(0, parseFloat(document.getElementById('fixOtros').value)||0);
+  d.refuerzo = document.getElementById('fixRefuerzo').value === 'si';
+  document.getElementById('fixModal').classList.add('hidden');
+  await saveState();
+  render();
+});
+document.getElementById('fixDelete').addEventListener('click', ()=>{
+  fixDeleteTarget = document.getElementById('fixDateSelect').value;
+  document.getElementById('delModal').classList.remove('hidden');
+});
+document.getElementById('cancelDel').addEventListener('click', ()=>{
+  fixDeleteTarget = null;
+  document.getElementById('delModal').classList.add('hidden');
+});
+document.getElementById('confirmDel').addEventListener('click', ()=>{
+  document.getElementById('delModal').classList.add('hidden');
+  document.getElementById('delDateLabel2').textContent = fixDeleteTarget ? fmtDate(fixDeleteTarget) : '';
+  document.getElementById('delModal2').classList.remove('hidden');
+});
+document.getElementById('cancelDel2').addEventListener('click', ()=>{
+  fixDeleteTarget = null;
+  document.getElementById('delModal2').classList.add('hidden');
+});
+document.getElementById('confirmDel2').addEventListener('click', async ()=>{
+  if(fixDeleteTarget){ delete days[fixDeleteTarget]; }
+  fixDeleteTarget = null;
+  document.getElementById('delModal2').classList.add('hidden');
+  document.getElementById('fixModal').classList.add('hidden');
+  await saveState();
+  render();
+});
+
+/* ---- borrar todo el historial ---- */
+document.getElementById('btnWipeAll').addEventListener('click', ()=>{
+  document.getElementById('wipeModal').classList.remove('hidden');
+});
+document.getElementById('cancelWipe').addEventListener('click', ()=>{
+  document.getElementById('wipeModal').classList.add('hidden');
+});
+document.getElementById('confirmWipe').addEventListener('click', ()=>{
+  document.getElementById('wipeModal').classList.add('hidden');
+  document.getElementById('wipeModal2').classList.remove('hidden');
+});
+document.getElementById('cancelWipe2').addEventListener('click', ()=>{
+  document.getElementById('wipeModal2').classList.add('hidden');
+});
+document.getElementById('confirmWipe2').addEventListener('click', async ()=>{
+  days = {};
+  document.getElementById('wipeModal2').classList.add('hidden');
+  await saveState();
+  render();
+});
+
+(function init(){
+  loadUsersConfig();
+  let saved = null;
+  try{ saved = localStorage.getItem('taxi:currentUser'); }catch(e){}
+  if(saved && usersConfig[saved]){
+    currentUser = saved;
+    enterApp();
+    if(SYNC_URL) testConnection();
+  } else {
+    showScreen('login');
+  }
+})();
+</script>
+</body>
+</html>
