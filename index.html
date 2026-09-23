@@ -776,7 +776,7 @@ async function testConnection(){
     let json = null;
     try{ json = await res.json(); }catch(_e){ /* no era JSON */ }
     if(json && json.ok){
-      statusEl.textContent = '☁ Conexión OK: ' + (json.message || 'endpoint activo');
+      statusEl.textContent = '☁ Conexión OK: ' + (json.message || 'endpoint activo') + (json.version ? ' · versión: ' + json.version : ' · ⚠ versión antigua (sin campo version)');
       statusEl.style.color = 'var(--led-green)';
     } else {
       statusEl.textContent = '⚠ El servidor respondió pero algo falla (HTTP ' + res.status + '). Revisa que Code.gs y appsscript.json estén bien pegados y vuelve a implementar.';
@@ -819,12 +819,10 @@ function doLogin(user, pass){
   const u = usersConfig[user];
   if(!u || u.password !== pass) return false;
   currentUser = user;
-  try{ localStorage.setItem('taxi:currentUser', user); }catch(e){}
   return true;
 }
 function doLogout(){
   currentUser = null;
-  try{ localStorage.removeItem('taxi:currentUser'); }catch(e){}
   document.getElementById('loginUser').value = '';
   document.getElementById('loginPass').value = '';
   showScreen('login');
@@ -870,6 +868,7 @@ function enterApp(){
     loadState();
     render();
     showScreen('home');
+    if(SYNC_URL) testConnection();
   }
 }
 
@@ -1345,15 +1344,9 @@ document.getElementById('confirmWipe2').addEventListener('click', async ()=>{
 
 (function init(){
   loadUsersConfig();
-  let saved = null;
-  try{ saved = localStorage.getItem('taxi:currentUser'); }catch(e){}
-  if(saved && usersConfig[saved]){
-    currentUser = saved;
-    enterApp();
-    if(SYNC_URL) testConnection();
-  } else {
-    showScreen('login');
-  }
+  // Siempre pide usuario y contraseña al abrir la app — no se mantiene
+  // sesión guardada entre visitas, ni siquiera si recargas la página.
+  showScreen('login');
 })();
 </script>
 </body>
