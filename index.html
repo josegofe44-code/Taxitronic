@@ -295,6 +295,7 @@
     <div class="field">
       <label>Usuario</label>
       <select id="loginUser">
+        <option value="" selected disabled>— Elige tu usuario —</option>
         <option value="12460">12460</option>
         <option value="12453">12453</option>
         <option value="3493">3493</option>
@@ -659,7 +660,7 @@
 // ==== SINCRONIZACIÓN CON GOOGLE SHEETS (Apps Script) ====
 // Pega aquí la URL de tu Web App tras desplegar apps-script/Code.gs (ver README.md).
 // Déjalo vacío ('') para trabajar solo en local, sin sincronizar.
-const SYNC_URL = 'https://script.google.com/macros/s/AKfycbwrYbhhDXwwXWWTbhJfffms2_GvmfaEN7q7krMjqZehF8gz0FrE492nz4eRGUk6k-KS6Q/exec';
+const SYNC_URL = 'https://script.google.com/macros/library/d/1_aOUowNtROkYhxcJBu3WL_DDCeWg5txX4PzA29JMxrryxjUaVyMNfNDH/5';
 
 async function syncDayToSheet(date){
   const statusEl = document.getElementById('syncStatus');
@@ -768,6 +769,8 @@ function doLogin(user, pass){
 function doLogout(){
   currentUser = null;
   try{ localStorage.removeItem('taxi:currentUser'); }catch(e){}
+  document.getElementById('loginUser').value = '';
+  document.getElementById('loginPass').value = '';
   showScreen('login');
 }
 
@@ -775,6 +778,11 @@ document.getElementById('btnLogin').addEventListener('click', ()=>{
   const user = document.getElementById('loginUser').value;
   const pass = document.getElementById('loginPass').value;
   const errEl = document.getElementById('loginError');
+  if(!user){
+    errEl.textContent = 'Elige primero tu usuario.';
+    errEl.style.display = 'block';
+    return;
+  }
   if(doLogin(user, pass)){
     errEl.style.display = 'none';
     document.getElementById('loginPass').value = '';
